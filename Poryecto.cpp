@@ -479,6 +479,7 @@ bool cataliticIsNotNextToElemental(Vertice* graph, int graphWeight) {
 	return true;
 }
 
+<<<<<<< HEAD
 void saveToFile(Hechizo *hechizos,int graphAmount,List<Hechicero> &hechiceros, int graphSizes[]){
 	
 	//Abrimos el archivo para los hechizos
@@ -619,6 +620,8 @@ void saveToFile(Hechizo *hechizos,int graphAmount,List<Hechicero> &hechiceros, i
 	
 }
 
+=======
+>>>>>>> 8023beca6e748692010991abd88ac43630d29cd8
 int main() {
 	Hechizo* graphs;
 	int* graphSizes;
