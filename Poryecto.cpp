@@ -208,10 +208,12 @@ class Edge{
     public:
     Vertice* end;
     float weight;
+	bool used;
     Edge(){}
     Edge(Vertice* _end, float _weight){
         end = _end;
         weight = _weight;
+		used = false;
     }
 };
 
@@ -307,6 +309,29 @@ float dijkstra(Vertice* graph, int graphWeight ){
     return maxWeight;
 }
 
+// Recibe el grafo, su tamaño, un flotante y un entero. Guarda el tamaño del camino más largo en aristas y su ponderación en los últimos 2 parámetros
+void longerCicle(Vertice* graph, int graphWeight, float &weight, int &longerCicle){
+	weight = 0.0f; longerCicle = 0;
+
+	backtrack(graph[0], graphWeight, weight, longerCicle);
+}
+
+void backtrack(Vertice &evaluating, int graphWeight, float &weight, int &longerCicle, float newWeight = 0, int newLonger = 0){
+	if (evaluating.name == 'a' && newLonger > longerCicle){
+		longerCicle = newLonger;
+		weight = newWeight;
+		return;
+	}
+
+	for (Node<Edge>* i = evaluating.adyacentVertices.getFirst(); i != nullptr; i = i->next){
+		if (!i->payload.used){
+			i->payload.used = true;
+			backtrack(*i->payload.end, graphWeight, weight, longerCicle, newWeight + i->payload.weight, newLonger + 1);
+			i->payload.used = false;
+		}
+	}
+}
+
 void readFile(Hechizo* &graphs, int* &graphSizes, List<Hechicero> &wizards, int &graphAmount){
 	ifstream spellList("spellList.in");
 	ifstream underInvestigation("underInvestigation.in");
@@ -367,6 +392,231 @@ void readFile(Hechizo* &graphs, int* &graphSizes, List<Hechicero> &wizards, int 
 
 	spellList.close();
 	underInvestigation.close();
+}
+
+// ART. 1
+bool hasOnlyOneConfluencePoint(Vertice* graph, int graphWeight){
+	bool hasConfluence = false;
+	for(int i = 0; i < graphWeight; i++){
+		if(graph[i].name == 'A'){
+			if(hasConfluence) return false;
+			else hasConfluence = true;
+		}
+	}
+
+	return hasConfluence;
+}
+
+// ART. 2
+bool confuenceNextToEnergetic(Vertice* graph, int graphWeight) {
+	for(int i = 0; i < graphWeight; i++){
+		// encuentra el nodo 'A' - nodo de confluencia
+		if(graph[i].name == 'A'){
+			auto edges = graph[i].adyacentVertices;
+			auto edge = edges.getFirst();
+			// recorre todas las aristas
+			while(edge != nullptr){
+				// si no son energeticos - 'B' retorna falso
+				if(edge->payload.end->name != 'B'){
+					return false;
+				}
+				edge = edge->next;
+			}
+			return true;
+		}
+	}
+	return true;
+}
+
+// ART. 3
+bool hasLessThan3Runes(Vertice* graph, int graphWeight) {
+	int rune[6] = {0,0,0,0,0,0};
+
+	for(int i = 0; i < graphWeight; i++) {
+		switch (graph[i].name) {
+		case 'I':
+			rune[0]=1;
+			break;
+		case 'Q':
+			rune[1]=1;
+			break;
+		case 'T':
+			rune[2]=1;
+			break;
+		case 'V':
+			rune[3]=1;
+			break;
+		case 'L':
+			rune[4]=1;
+			break;
+		case 'O':
+			rune[5]=1;
+			break;
+		}
+	}
+	int numberOfRunes = 0;
+	for(int i = 0; i < 6; i++){
+		numberOfRunes += rune[i];
+	}
+
+	return numberOfRunes <= 3;
+}
+// ART. 4 - si retorna true se cumple el articulo
+bool cataliticIsNotNextToElemental(Vertice* graph, int graphWeight) {
+	for(int i = 0; i < graphWeight; i++){
+		if(graph[i].name == 'D'){
+			auto edge = graph[i].adyacentVertices.getFirst();
+			while(edge != nullptr){
+				char edgeName = edge->payload.end->name;
+				if(edgeName == 'I' || edgeName == 'Q' || edgeName == 'T' || edgeName == 'V' || edgeName == 'L' || edgeName == 'O'){
+					return false;
+				}
+				edge = edge->next;
+			}
+			return true;
+		}
+	}
+	return true;
+}
+
+void saveToFile(Hechizo *hechizos,int graphAmount,List<Hechicero> &hechiceros, int graphSizes[]){
+	
+	//Abrimos el archivo para los hechizos
+	fstream file;
+	file.open("processedSpells.out", ios::out);
+	
+	if(!file.is_open()){
+		cout<<"Error al abrir archivo"<<endl;
+		exit(1);
+	}
+	
+	file<<"Hechizos Legales"<<endl<<endl;
+	
+	for(int i=0; i<graphAmount; i++){
+		if(!hechizos[i].illegal){
+			for(int j=0;j<graphSizes[i];j++){	
+				switch(hechizos[i].graph[j].name){
+					case 'I'://Fuego
+						file<<"Ignatum ";
+						break;
+					case 'Q'://Agua
+						file<<"Aquos ";
+						break;
+						
+					case 'T'://Tierra
+						file<<"Terraminium ";
+						break;
+					case 'V'://Aire
+						file<<"Ventus ";
+						break;
+					case 'L'://Luz
+						file<<"Lux ";
+						break;
+					case 'O'://Oscuridad
+						file<<"Tenebrae ";
+						break;
+				}
+				
+				if(hechizos[i].wizardName[hechizos[i].wizardName.size()-1] == 'a' || hechizos[i].wizardName[hechizos[i].wizardName.size()-1] == 'e' 
+				|| hechizos[i].wizardName[hechizos[i].wizardName.size()-1] == 'i' || hechizos[i].wizardName[hechizos[i].wizardName.size()-1] == 'o'
+				|| hechizos[i].wizardName[hechizos[i].wizardName.size()-1] == 'u'){
+					
+						
+					string spellName = hechizos[i].wizardName.substr(0,hechizos[i].wizardName.size()-1);
+					spellName += "ium";
+					
+					file<<spellName;
+				}else{
+					string spellName = hechizos[i].wizardName + "um";	
+					file<<spellName;
+				}
+				
+				//Falta la comporbaci�n final de lo del modicum/maximos/arcanus
+				
+				file<<endl<<hechizos[i].wizardName<<endl<<endl;
+				
+				
+			}
+		}
+		
+	}
+	
+	file<<"Hechizos Ilegales"<<endl<<endl;
+	
+	for(int i=0; i<graphAmount; i++){
+		
+		if(hechizos[i].illegal){
+			for(int j=0;j<graphSizes[i];j++){	
+				switch(hechizos[i].graph[j].name){
+					case 'I'://Fuego
+						file<<"Ignatum ";
+						break;
+					case 'Q'://Agua
+						file<<"Aquos ";
+						break;
+						
+					case 'T'://Tierra
+						file<<"Terraminium ";
+						break;
+					case 'V'://Aire
+						file<<"Ventus ";
+						break;
+					case 'L'://Luz
+						file<<"Lux ";
+						break;
+					case 'O'://Oscuridad
+						file<<"Tenebrae ";
+						break;
+				}
+				
+				if(hechizos[i].wizardName[hechizos[i].wizardName.size()-1] == 'a' || hechizos[i].wizardName[hechizos[i].wizardName.size()-1] == 'e' 
+				|| hechizos[i].wizardName[hechizos[i].wizardName.size()-1] == 'i' || hechizos[i].wizardName[hechizos[i].wizardName.size()-1] == 'o'
+				|| hechizos[i].wizardName[hechizos[i].wizardName.size()-1] == 'u'){
+					
+						
+					string spellName = hechizos[i].wizardName.substr(0,hechizos[i].wizardName.size()-1);
+					spellName += "ium";
+					
+					file<<spellName;
+				}else{
+					string spellName = hechizos[i].wizardName + "um";	
+					file<<spellName;
+				}
+				
+				//Falta la comporbaci�n final de lo del modicum/maximos/arcanus
+				
+				file<<endl<<hechizos[i].wizardName<<endl<<endl;
+				
+				
+			}
+		}
+	}
+	
+	
+	file.close();
+	file.open("underInvestigation.in",ios::out);
+
+	
+	if(!file.is_open()){
+		cout<<"Error al abrir archivo"<<endl;
+		exit(1);
+	}
+		
+	
+	Node<Hechicero> *aux = hechiceros.getFirst();
+	
+	while(aux != NULL){
+		
+		file<<aux->payload.name<<endl;
+		
+		aux = aux->next;
+	}
+	
+	
+	
+	//
+	
+	
 }
 
 int main() {
